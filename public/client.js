@@ -68,10 +68,33 @@ window.addEventListener("load", () => {
 
   socket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
-    if (data.channel.alternatives[0].transcript !== "") {
-      captions.innerHTML = data
-        ? `<span>${data.channel.alternatives[0].transcript}</span>`
-        : "";
+    console.log(data);
+    if (data.channel && data.channel.alternatives && data.channel.alternatives[0]) {
+      const alternative = data.channel.alternatives[0];
+      if (alternative.transcript !== "") {
+        // Format transcript with speaker labels
+        let formattedTranscript = alternative.transcript;
+        
+        if (alternative.words && alternative.words.length > 0) {
+          // Group words by speaker
+          const speakerGroups = {};
+          alternative.words.forEach(word => {
+            if (word.speaker !== undefined) {
+              if (!speakerGroups[word.speaker]) {
+                speakerGroups[word.speaker] = [];
+              }
+              speakerGroups[word.speaker].push(word.word);
+            }
+          });
+          
+          // Format with speaker labels
+          formattedTranscript = Object.entries(speakerGroups)
+            .map(([speaker, words]) => `Speaker ${speaker}: ${words.join(' ')}`)
+            .join('\n');
+        }
+        
+        captions.innerHTML = `<span>${formattedTranscript}</span>`;
+      }
     }
   });
 

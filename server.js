@@ -11,6 +11,8 @@ const wss = new WebSocket.Server({ server });
 
 const deepgramClient = createClient(process.env.DEEPGRAM_API_KEY);
 let keepAlive;
+let speakerMap = new Map(); // Map to track speaker labels
+let nextSpeakerNumber = 1; // Counter for speaker numbering
 
 const setupDeepgram = (ws) => {
   const deepgram = deepgramClient.listen.live({
@@ -18,6 +20,7 @@ const setupDeepgram = (ws) => {
     punctuate: true,
     smart_format: true,
     model: "nova",
+    diarize: true,
   });
 
   if (keepAlive) clearInterval(keepAlive);
@@ -29,12 +32,28 @@ const setupDeepgram = (ws) => {
   deepgram.addListener(LiveTranscriptionEvents.Open, async () => {
     console.log("deepgram: connected");
 
-    deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-      console.log("deepgram: packet received");
-      console.log("deepgram: transcript received");
-      console.log("socket: transcript sent to client");
-      ws.send(JSON.stringify(data));
-    });
+      deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+    console.log("deepgram: packet received");
+    console.log("deepgram: transcript received");
+    
+    // Process diarization and relabel speakers
+    if (data.channel && data.channel.alternatives && data.channel.alternatives[0]) {
+      const alternative = data.channel.alternatives[0];
+      if (alternative.words && alternative.words.length > 0) {
+        alternative.words.forEach(word => {
+          if (word.speaker !== undefined) {
+            if (!speakerMap.has(word.speaker)) {
+              speakerMap.set(word.speaker, nextSpeakerNumber++);
+            }
+            word.speaker = speakerMap.get(word.speaker);
+          }
+        });
+      }
+    }
+    
+    console.log("socket: transcript sent to client");
+    ws.send(JSON.stringify(data));
+  });
 
     deepgram.addListener(LiveTranscriptionEvents.Close, async () => {
       console.log("deepgram: disconnected");
