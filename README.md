@@ -36,7 +36,7 @@ npm run start
 Once the server is running, open the following url in the browser
 
 ```
-http://localhost:3000/
+http://localhost:3100/
 ```
 
 Click on the button when you're ready to transcribe.

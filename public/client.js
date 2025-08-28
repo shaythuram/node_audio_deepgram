@@ -59,7 +59,7 @@ async function start(socket) {
 }
 
 window.addEventListener("load", () => {
-  const socket = new WebSocket("ws://localhost:3000");
+  const socket = new WebSocket("ws://localhost:3100");
 
   socket.addEventListener("open", async () => {
     console.log("WebSocket connection opened");
